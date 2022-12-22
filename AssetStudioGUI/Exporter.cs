@@ -259,13 +259,14 @@ namespace AssetStudioGUI
         private static bool TryExportFile(string dir, AssetItem item, string extension, out string fullPath)
         {
             var fileName = FixFileName(item.Text);
-            fullPath = Path.Combine(dir, fileName + extension);
+            fullPath = Path.Combine(dir, fileName + (item.Container.All("0123456789abcdefABCDEF".Contains) ? " #" + item.Container : string.Empty) + extension);
             if (!File.Exists(fullPath))
             {
-                Directory.CreateDirectory(dir);
-                return true;
+              Directory.CreateDirectory(dir);
+              return true;
             }
-            fullPath = Path.Combine(dir, fileName + item.UniqueID + extension);
+            // if a file with the same filename exists for an item with container in its name, this way of figuring out what comes from where stops working anyway
+            fullPath = Path.Combine(dir, fileName + (item.Container.All("0123456789abcdefABCDEF".Contains) ? " #" + item.Container : item.UniqueID) + extension);
             if (!File.Exists(fullPath))
             {
                 Directory.CreateDirectory(dir);
