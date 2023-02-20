@@ -20,14 +20,18 @@ namespace AssetStudioGUI
                 var image = m_Texture2D.ConvertToImage(true);
                 if (image == null)
                     return false;
-                using (image)
+                var bitmap = new DirectBitmap(image.ConvertToBytes(), m_Texture2D.m_Width, m_Texture2D.m_Height);
+                for (int i = 0; i < bitmap.Height; i++)
                 {
-                    using (var file = File.OpenWrite(exportFullPath))
+                    int offset = System.Math.Abs(bitmap.Stride) * i;
+                    for (int j = 0; j < bitmap.Width; j++)
                     {
-                        image.WriteToStream(file, type);
+                        bitmap.Bits[offset + 3] = byte.MaxValue;
+                        offset += 4;
                     }
-                    return true;
                 }
+                bitmap.Bitmap.Save(exportFullPath);
+                return true;
             }
             else
             {
@@ -263,8 +267,8 @@ namespace AssetStudioGUI
             fullPath = Path.Combine(dir, fileName + (allHex ? " #" + item.Container : string.Empty) + extension);
             if (!File.Exists(fullPath))
             {
-              Directory.CreateDirectory(dir);
-              return true;
+                Directory.CreateDirectory(dir);
+                return true;
             }
             // if a file with the same filename exists for an item with container in its name, this way of figuring out what comes from where stops working anyway
             fullPath = Path.Combine(dir, fileName + (allHex ? $" #{item.Container} ({item.UniqueID})" : item.UniqueID) + extension);
