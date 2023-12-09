@@ -474,47 +474,41 @@ namespace AssetStudioGUI
 
                 Progress.Reset();
 
-                using (FileStream saveStream = new(filePath, FileMode.OpenOrCreate, FileAccess.Write))
+                switch (exportListType)
                 {
-                    switch (exportListType)
-                    {
-                        case ExportListType.XML:
-                            var doc = new XDocument(
-                                new XElement("Assets",
-                                    new XAttribute("createdAt", DateTime.UtcNow.ToString("s")),
-                                    toExportAssets.Select(
-                                        asset => new XElement("Asset",
-                                            new XElement("Name", asset.Text),
-                                            new XElement("Container", asset.Container),
-                                            new XElement("Type", new XAttribute("id", (int)asset.Type), asset.TypeString),
-                                            new XElement("PathID", asset.m_PathID),
-                                            new XElement("Source", asset.SourceFile.fullName),
-                                            new XElement("Size", asset.FullSize)
-                                        )
+                    case ExportListType.XML:
+                        var doc = new XDocument(
+                            new XElement("Assets",
+                                new XAttribute("createdAt", DateTime.UtcNow.ToString("s")),
+                                toExportAssets.Select(
+                                    asset => new XElement("Asset",
+                                        new XElement("Name", asset.Text),
+                                        new XElement("Container", asset.Container),
+                                        new XElement("Type", new XAttribute("id", (int)asset.Type), asset.TypeString),
+                                        new XElement("PathID", asset.m_PathID),
+                                        new XElement("Source", asset.SourceFile.fullName),
+                                        new XElement("Size", asset.FullSize)
                                     )
                                 )
-                            );
+                            )
+                        );
+                        FileStream saveStream = new(filePath, FileMode.OpenOrCreate, FileAccess.Write);
+                        doc.Save(saveStream);
 
-                            doc.Save(saveStream);
-
-                            break;
-                        case ExportListType.JSON:
-                            string jsonString = JsonSerializer.Serialize(toExportAssets.Select(asset => new Dictionary<string, object>(
-                                new KeyValuePair<string, object>[] {
-                                    new("Name", asset.Text),
-                                    new("Container", asset.Container),
-                                    new("Type", asset.TypeString),
-                                    new("PathID", asset.m_PathID),
-                                    new("Source", asset.SourceFile.fileName), // TODO: Relative path from loadFolder
-                                    new("UniqueID", asset.UniqueID)
-                                }
-                            )));
-                            using (StreamWriter streamWriter = new(saveStream, new UTF8Encoding(false)))
-                            {
-                                streamWriter.Write(jsonString);
+                        break;
+                    case ExportListType.JSON:
+                        string jsonString = JsonSerializer.Serialize(toExportAssets.Select(asset => new Dictionary<string, object>(
+                            new KeyValuePair<string, object>[] {
+                                new("Name", asset.Text),
+                                new("Container", asset.Container),
+                                new("Type", asset.TypeString),
+                                new("PathID", asset.m_PathID),
+                                new("Source", asset.SourceFile.fileName), // TODO: Relative path from loadFolder
+                                new("UniqueID", asset.UniqueID)
                             }
-                            break;
-                    }
+                        )));
+                        File.WriteAllText(filePath, jsonString);
+                        break;
                 }
 
                 var statusText = $"Finished exporting asset list with {toExportAssets.Count()} items.";
