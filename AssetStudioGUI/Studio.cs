@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Windows.Forms;
@@ -508,7 +509,7 @@ namespace AssetStudioGUI
                                     new("UniqueID", asset.UniqueID)
                                 }
                             )));
-                            using (StreamWriter streamWriter = new(saveStream, System.Text.Encoding.UTF8))
+                            using (StreamWriter streamWriter = new(saveStream, new UTF8Encoding(false)))
                             {
                                 streamWriter.Write(jsonString);
                             }
