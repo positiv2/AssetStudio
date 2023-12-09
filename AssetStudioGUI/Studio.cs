@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Windows.Forms;
 using System.Xml.Linq;
@@ -29,7 +30,8 @@ namespace AssetStudioGUI
 
     internal enum ExportListType
     {
-        XML
+        XML,
+        JSON
     }
 
     internal static class Studio
@@ -441,7 +443,7 @@ namespace AssetStudioGUI
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Export {asset.Type}:{asset.Text} error\r\n{ex.Message}\r\n{ex.StackTrace}");
+                        Logger.Error($"Export {asset.Type}:{asset.Text} error\r\n{ex.Message}\r\n{ex.StackTrace}");
                     }
 
                     Progress.Report(++i, toExportCount);
@@ -463,7 +465,7 @@ namespace AssetStudioGUI
             });
         }
 
-        public static void ExportAssetsList(string savePath, List<AssetItem> toExportAssets, ExportListType exportListType)
+        public static void ExportAssetsList(string filePath, List<AssetItem> toExportAssets, ExportListType exportListType)
         {
             ThreadPool.QueueUserWorkItem(state =>
             {
@@ -471,30 +473,47 @@ namespace AssetStudioGUI
 
                 Progress.Reset();
 
-                switch (exportListType)
+                using (FileStream saveStream = new(filePath, FileMode.OpenOrCreate, FileAccess.Write))
                 {
-                    case ExportListType.XML:
-                        var filename = Path.Combine(savePath, "assets.xml");
-                        var doc = new XDocument(
-                            new XElement("Assets",
-                                new XAttribute("filename", filename),
-                                new XAttribute("createdAt", DateTime.UtcNow.ToString("s")),
-                                toExportAssets.Select(
-                                    asset => new XElement("Asset",
-                                        new XElement("Name", asset.Text),
-                                        new XElement("Container", asset.Container),
-                                        new XElement("Type", new XAttribute("id", (int)asset.Type), asset.TypeString),
-                                        new XElement("PathID", asset.m_PathID),
-                                        new XElement("Source", asset.SourceFile.fullName),
-                                        new XElement("Size", asset.FullSize)
+                    switch (exportListType)
+                    {
+                        case ExportListType.XML:
+                            var doc = new XDocument(
+                                new XElement("Assets",
+                                    new XAttribute("createdAt", DateTime.UtcNow.ToString("s")),
+                                    toExportAssets.Select(
+                                        asset => new XElement("Asset",
+                                            new XElement("Name", asset.Text),
+                                            new XElement("Container", asset.Container),
+                                            new XElement("Type", new XAttribute("id", (int)asset.Type), asset.TypeString),
+                                            new XElement("PathID", asset.m_PathID),
+                                            new XElement("Source", asset.SourceFile.fullName),
+                                            new XElement("Size", asset.FullSize)
+                                        )
                                     )
                                 )
-                            )
-                        );
+                            );
 
-                        doc.Save(filename);
+                            doc.Save(saveStream);
 
-                        break;
+                            break;
+                        case ExportListType.JSON:
+                            string jsonString = JsonSerializer.Serialize(toExportAssets.Select(asset => new Dictionary<string, object>(
+                                new KeyValuePair<string, object>[] {
+                                    new("Name", asset.Text),
+                                    new("Container", asset.Container),
+                                    new("Type", asset.TypeString),
+                                    new("PathID", asset.m_PathID),
+                                    new("Source", asset.SourceFile.fileName), // TODO: Relative path from loadFolder
+                                    new("UniqueID", asset.UniqueID)
+                                }
+                            )));
+                            using (StreamWriter streamWriter = new(saveStream, System.Text.Encoding.UTF8))
+                            {
+                                streamWriter.Write(jsonString);
+                            }
+                            break;
+                    }
                 }
 
                 var statusText = $"Finished exporting asset list with {toExportAssets.Count()} items.";
@@ -503,7 +522,7 @@ namespace AssetStudioGUI
 
                 if (Properties.Settings.Default.openAfterExport && toExportAssets.Count() > 0)
                 {
-                    OpenFolderInExplorer(savePath);
+                    OpenFolderInExplorer(Path.GetDirectoryName(filePath));
                 }
             });
         }

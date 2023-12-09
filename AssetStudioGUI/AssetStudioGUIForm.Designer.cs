@@ -457,7 +457,7 @@
             this.toolStripMenuItem13});
             this.toolStripMenuItem10.Name = "toolStripMenuItem10";
             this.toolStripMenuItem10.Size = new System.Drawing.Size(284, 22);
-            this.toolStripMenuItem10.Text = "Asset list to XML";
+            this.toolStripMenuItem10.Text = "Asset list";
             // 
             // toolStripMenuItem11
             // 

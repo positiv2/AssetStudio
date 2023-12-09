@@ -1,9 +1,11 @@
 ﻿using AssetStudio;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace AssetStudioGUI
 {
@@ -106,7 +108,7 @@ namespace AssetStudioGUI
                 type = m_MonoBehaviour.ToType(m_Type);
             }
             var str = JsonConvert.SerializeObject(type, Formatting.Indented);
-            File.WriteAllText(exportFullPath, str);
+            Task.Factory.StartNew(() => { File.WriteAllText(exportFullPath, str); });
             return true;
         }
 
@@ -263,15 +265,8 @@ namespace AssetStudioGUI
         private static bool TryExportFile(string dir, AssetItem item, string extension, out string fullPath)
         {
             var fileName = FixFileName(item.Text);
-            var allHex = item.Container.All("0123456789abcdefABCDEF".Contains);
-            fullPath = Path.Combine(dir, fileName + (allHex ? " #" + item.Container : string.Empty) + extension);
-            if (!File.Exists(fullPath))
-            {
-                Directory.CreateDirectory(dir);
-                return true;
-            }
-            // if a file with the same filename exists for an item with container in its name, this way of figuring out what comes from where stops working anyway
-            fullPath = Path.Combine(dir, fileName + (allHex ? $" #{item.Container} ({item.UniqueID})" : item.UniqueID) + extension);
+            // Unlike the original AssetStudio, we always export with UniqueID in order to be able to match files with their asset list entries
+            fullPath = Path.Combine(dir, fileName + item.UniqueID + extension);
             if (!File.Exists(fullPath))
             {
                 Directory.CreateDirectory(dir);

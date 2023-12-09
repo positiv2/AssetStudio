@@ -1580,12 +1580,20 @@ namespace AssetStudioGUI
 
             if (exportableAssets.Count > 0)
             {
-                var saveFolderDialog = new OpenFolderDialog();
-                saveFolderDialog.InitialFolder = saveDirectoryBackup;
+                SaveFileDialog saveFolderDialog = new()
+                {
+                    AddExtension = true,
+                    DefaultExt = "json",
+                    FileName = "assets",
+                    Filter = "JSON file (*.json)|*.json|XML file (*.xml)|*.xml",
+                    FilterIndex = 1,
+                    RestoreDirectory = true,
+                    OverwritePrompt = false,
+                    InitialDirectory = saveDirectoryBackup
+                };
                 if (saveFolderDialog.ShowDialog(this) == DialogResult.OK)
                 {
                     timer.Stop();
-                    saveDirectoryBackup = saveFolderDialog.Folder;
                     List<AssetItem> toExportAssets = null;
                     switch (type)
                     {
@@ -1599,7 +1607,14 @@ namespace AssetStudioGUI
                             toExportAssets = visibleAssets;
                             break;
                     }
-                    Studio.ExportAssetsList(saveFolderDialog.Folder, toExportAssets, ExportListType.XML);
+                    ExportListType exportType;
+                    switch (Path.GetExtension(saveFolderDialog.FileName))
+                    {
+                        case ".json":
+                        default: exportType = ExportListType.JSON; break;
+                        case ".xml": exportType = ExportListType.XML; break;
+                    }
+                    Studio.ExportAssetsList(saveFolderDialog.FileName, toExportAssets, exportType);
                 }
             }
             else
