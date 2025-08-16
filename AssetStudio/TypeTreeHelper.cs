@@ -172,7 +172,15 @@ namespace AssetStudio
             {
                 var m_Node = m_Nodes[i];
                 var varNameStr = m_Node.m_Name;
-                obj[varNameStr] = ReadValue(m_Nodes, reader, ref i);
+                try
+                {
+                    obj[varNameStr] = ReadValue(m_Nodes, reader, ref i);
+                }
+                catch (EndOfStreamException)
+                {
+                    Logger.Warning("Read beyond stream end!");
+                    return obj;
+                }
             }
             var readed = reader.Position - reader.byteStart;
             if (readed != reader.byteSize)

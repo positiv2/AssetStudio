@@ -378,7 +378,7 @@ namespace AssetStudio
 
         private void ReadAssets()
         {
-            Logger.Info("Read assets...");
+            Logger.Info("Reading assets...");
 
             var progressCount = assetsFileList.Sum(x => x.m_Objects.Count);
             int i = 0;
@@ -387,6 +387,7 @@ namespace AssetStudio
             {
                 foreach (var objectInfo in assetsFile.m_Objects)
                 {
+                    Logger.Info("Reading asset...");
                     var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo);
                     try
                     {
@@ -451,7 +452,10 @@ namespace AssetStudio
                                 obj = new RectTransform(objectReader);
                                 break;
                             case ClassIDType.Shader:
-                                obj = new Shader(objectReader);
+                                Logger.Info("Skipping shader loading.");
+                                obj = null;
+                                // We do not care about shaders, so for performance reasons we skip them completely
+                                // obj = new Shader(objectReader);
                                 break;
                             case ClassIDType.SkinnedMeshRenderer:
                                 obj = new SkinnedMeshRenderer(objectReader);
@@ -481,7 +485,7 @@ namespace AssetStudio
                                 obj = new Object(objectReader);
                                 break;
                         }
-                        assetsFile.AddObject(obj);
+                        if (obj != null) assetsFile.AddObject(obj);
                     }
                     catch (Exception e)
                     {
